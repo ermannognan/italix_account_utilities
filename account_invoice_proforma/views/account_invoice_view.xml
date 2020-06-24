@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="invoice_form" model="ir.ui.view">
+            <field name="name">account.invoice.form</field>
+            <field name="model">account.invoice</field>
+            <field name="inherit_id" ref="account.invoice_form"/>
+            <field name="arch" type="xml">
+
+                <xpath expr="//h1/div/field[@name='sequence_number_next']/../.." position="after">
+                    <field name="is_proforma" invisible="1"/>
+                    <h2 attrs="{'invisible': ['|', ('is_proforma', '=', False), ('state', '!=', 'draft')]}">
+                        <div>
+                            <label for="proforma_sequence_number_next_prefix" string="Proforma number:"/><br/>
+                            <field name="proforma_sequence_number_next_prefix" class="oe_inline" attrs="{'invisible': ['|', ('proforma_number', '=', False), ('proforma_number', '=', '')]}"/>
+                            <field name="proforma_sequence_number_next" class="oe_inline" attrs="{'invisible': ['|', ('proforma_number', '=', False), ('proforma_number', '=', '')]}"/>
+                            <field name="proforma_number" class="oe_inline" attrs="{'invisible': [('proforma_number', '!=', False), ('proforma_number', '!=', '')]}"/>
+                        </div>
+                    </h2>
+                </xpath>
+
+            </field>
+        </record>
+
+    </data>
+</odoo>
