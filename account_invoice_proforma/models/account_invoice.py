@@ -1,7 +1,7 @@
 # Copyright (C) 2018 - TODAY, Pavlov Media
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odoo import fields, models, api
+from odoo import fields, models, api, _
 import re
 
 class AccountInvoice(models.Model):
@@ -18,7 +18,7 @@ class AccountInvoice(models.Model):
         string="Proforma next number", compute="_get_sequence_number_next",
         inverse="_set_proforma_sequence_next")
     proforma_sequence_number_next_prefix = fields.Char(
-        string="Proforma next Number prefix", 
+        string="Proforma next Number prefix",
         compute="_get_sequence_prefix")
 
     _sql_constraints = [(
@@ -63,7 +63,7 @@ class AccountInvoice(models.Model):
                     "%%0%sd" % proforma_journal_sequence.padding % number_next
             else:
                 invoice.proforma_sequence_number_next = ""
-    
+
     def _get_proforma_seq_number_next_stuff(self):
         self.ensure_one()
         journal_sequence = self.journal_id.proforma_sequence_id

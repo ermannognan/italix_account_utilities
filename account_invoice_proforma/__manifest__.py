@@ -19,6 +19,7 @@
         'views/account_invoice_view.xml',
         'views/res_partner_view.xml',
         'views/res_config_settings_views.xml',
+        'views/account_journal_view.xml',
     ],
     "installable": True
 }
