@@ -115,7 +115,7 @@ class AccountJournal(models.Model):
         if is_proforma:
             """ Create new no_gap entry sequence for every new Journal"""
             prefix = self._get_sequence_prefix(vals['code'], False)
-            seq_name = vals['code'] + _(': Proforma') or vals['code']
+            seq_name = vals['code'] + _(': proforma') or vals['code']
             seq = {
                 'name': _('%s Sequence') % seq_name,
                 'implementation': 'no_gap',
