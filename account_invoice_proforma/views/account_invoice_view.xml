@@ -8,16 +8,35 @@
             <field name="inherit_id" ref="account.invoice_form"/>
             <field name="arch" type="xml">
 
+                <xpath expr="//button[@name='action_invoice_open']" position="before">
+                    <button name="action_invoice_sent" string="Send proforma" type="object" attrs="{'invisible':['|', ('is_proforma', '=', False), ('sent', '=', True)]}" class="btn btn-primary" groups="base.group_user" context="{'template_proforma': True}"/>
+                    <button name="action_invoice_sent" string="Send proforma" type="object" attrs="{'invisible':['|', ('is_proforma', '=', False), ('sent', '=', False)]}" class="btn" groups="base.group_user" context="{'template_proforma': True}"/>
+                </xpath>
+
+                <!--<xpath expr="//button[@name='action_invoice_open']" position="attributes">
+                    <attribute name="states"></attribute>
+                    <atrrubute name="attrs">{'invisible': ['|', ('state', '!=', 'draft'), ('is_proforma', '=', True), ('sent', '=', False)]}</atrrubute>
+                </xpath>-->
+                <xpath expr="//button[@name='action_invoice_open']" position="attributes">
+                    <attribute name="invisible">True</attribute>
+                </xpath>
+
+                <xpath expr="//button[@name='action_invoice_open']" position="after">
+                    <button name="action_invoice_open" type="object" string="Validate" class="oe_highlight o_invoice_validate" attrs="{'invisible': ['|', ('state', '!=', 'draft'), ('is_proforma', '=', True), ('sent', '=', False)]}" groups="account.group_account_invoice"/>
+                </xpath>
+
+
                 <xpath expr="//h1/div/field[@name='sequence_number_next']/../.." position="after">
                     <field name="is_proforma" invisible="1"/>
                     <h2 attrs="{'invisible': ['|', ('is_proforma', '=', False), ('state', '!=', 'draft')]}">
                         <div>
                             <label for="proforma_sequence_number_next_prefix" string="Proforma number:"/><br/>
-                            <field name="proforma_sequence_number_next_prefix" class="oe_inline" attrs="{'invisible': ['|', ('proforma_number', '=', False), ('proforma_number', '=', '')]}"/>
-                            <field name="proforma_sequence_number_next" class="oe_inline" attrs="{'invisible': ['|', ('proforma_number', '=', False), ('proforma_number', '=', '')]}"/>
-                            <field name="proforma_number" class="oe_inline" attrs="{'invisible': [('proforma_number', '!=', False), ('proforma_number', '!=', '')]}"/>
+                            <field name="proforma_sequence_number_next_prefix" class="oe_inline" attrs="{'invisible': [('proforma_number_with_version', '!=', False)]}"/>
+                            <field name="proforma_sequence_number_next" class="oe_inline" attrs="{'invisible': [('proforma_number_with_version', '!=', False)]}"/>
+                            <field name="proforma_number_with_version" class="oe_inline" style="color: green;" attrs="{'invisible': ['|', ('proforma_number_with_version', '=', False), ('proforma_number_with_version', '=', '')]}"/>
                         </div>
                     </h2>
+
                 </xpath>
 
             </field>

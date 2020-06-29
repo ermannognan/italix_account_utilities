@@ -16,6 +16,7 @@
     ],
     "data": [
         'data/data.xml',
+        'report/account_invoice_report.xml',
         'views/account_invoice_view.xml',
         'views/res_partner_view.xml',
         'views/res_config_settings_views.xml',

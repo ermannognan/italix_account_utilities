@@ -2,6 +2,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from odoo import fields, models, api, _
+from odoo.exceptions import UserError
 import re
 
 class AccountInvoice(models.Model):
@@ -10,7 +11,7 @@ class AccountInvoice(models.Model):
     proforma_number = fields.Char(
         string="Proforma number", copy=False, readonly=True)
     proforma_version = fields.Integer(
-        string="Proforma version", required=True, readonly=True, default=1)
+        string="Proforma version", required=True, readonly=True, default=0)
     proforma_date = fields.Date(string="Proforma date", required=False)
     is_proforma = fields.Boolean(
         string="Is proforma", compute="_compute_is_proforma", store=True)
@@ -20,12 +21,87 @@ class AccountInvoice(models.Model):
     proforma_sequence_number_next_prefix = fields.Char(
         string="Proforma next Number prefix",
         compute="_get_sequence_prefix")
+    proforma_version_str = fields.Char(
+        string="Proforma version",
+        compute="_get_proforma_info")
+    proforma_number_with_version = fields.Char(
+        string="Proforma version",
+        compute="_get_proforma_info")
+    proforma_has_changed = fields.Boolean(
+        string="Proforma has changed", default=True)
 
     _sql_constraints = [(
         "proforma_number_uniq",
         "unique(proforma_number, company_id, journal_id, type)",
         "Invoice proforma number must be unique per company!"),
     ]
+
+    @api.multi
+    @api.depends("proforma_version", "proforma_number")
+    def _get_proforma_info(self):
+        for invoice in self:
+            version = "/V%03d" % invoice.proforma_version
+            invoice.proforma_version_str = version
+            if invoice.proforma_number:
+                invoice.proforma_number_with_version = \
+                    invoice.proforma_number + version
+            else:
+                invoice.proforma_number_with_version = False
+
+    @api.multi
+    def action_invoice_sent(self):
+        self.ensure_one()
+        if not self.invoice_line_ids:
+            raise UserError(_("This invoice has no lines!"))
+        if self.is_proforma:
+            if not self.proforma_number:
+                self.proforma_number = \
+                    self.proforma_sequence_number_next_prefix + \
+                    self.proforma_sequence_number_next
+                #  sequence next()
+            if self.proforma_has_changed:
+                self.proforma_version += 1
+                self.proforma_has_changed = False
+        if self._context.get("template_proforma"):
+            template = self.env.ref("account_invoice_proforma.email_template_edi_proforma_invoice", False)
+            compose_form = self.env.ref("account.account_invoice_send_wizard_form", False)
+            lang = self.env.context.get("lang")
+            if template and template.lang:
+                lang = template._render_template(template.lang, "account.invoice", self.id)
+            self = self.with_context(lang=lang)
+            invoice_types = {
+                "out_invoice": _("Invoice"),
+                "in_invoice": _("Vendor Bill"),
+                "out_refund": _("Credit Note"),
+                "in_refund": _("Vendor Credit note"),
+            }
+            ctx = dict(
+                default_model="account.invoice",
+                default_res_id=self.id,
+                default_use_template=bool(template),
+                default_template_id=template and template.id or False,
+                default_composition_mode="comment",
+                mark_invoice_as_sent=True,
+                model_description=invoice_types[self.type],
+                custom_layout="mail.mail_notification_paynow",
+                force_email=True
+            )
+            return {
+                "name": _("Send Invoice"),
+                "type": "ir.actions.act_window",
+                "view_type": "form",
+                "view_mode": "form",
+                "res_model": "account.invoice.send",
+                "views": [(compose_form.id, "form")],
+                "view_id": compose_form.id,
+                "target": "new",
+                "context": ctx,
+            }
+        else:
+            res = super(AccountInvoice, self).action_invoice_sent()
+        return res
+
+
 
     @api.multi
     def _set_proforma_sequence_next(self):
@@ -36,7 +112,7 @@ class AccountInvoice(models.Model):
                 not self.proforma_sequence_number_next or \
                 self.search_count(domain):
             return
-        nxt = re.sub("[^0-9]", '', self.proforma_sequence_number_next)
+        nxt = re.sub("[^0-9]", "", self.proforma_sequence_number_next)
         result = re.match("(0*)([0-9]+)", nxt)
         if result and proforma_journal_sequence:
             # use _get_current_sequence to manage the date range sequences

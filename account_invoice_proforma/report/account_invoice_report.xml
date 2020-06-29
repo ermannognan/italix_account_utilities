@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <template id="report_invoice_document_proforma_with_payments" inherit_id="account.report_invoice_document_with_payments" primary="True">
+            <xpath expr="//h2[1]" position="attributes">
+                <attribute name="t-if">o.is_proforma == False</attribute>
+            </xpath>
+
+            <xpath expr="//h2[1]" position="after">
+                CICCIO PASTICCIO
+                <h2 t-if="o.is_proforma == True">
+                    <span>Proforma invoice</span>
+                    <span t-field="o.number"/>
+                </h2>
+            </xpath>
+        </template>
+
+    </data>
+</odoo>
