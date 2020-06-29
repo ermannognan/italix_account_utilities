@@ -2,16 +2,15 @@
 <odoo>
     <data>
 
-        <template id="report_invoice_document_proforma_with_payments" inherit_id="account.report_invoice_document_with_payments" primary="True">
+        <template id="report_proforma_invoice_document_with_payments" inherit_id="account.report_invoice_document_with_payments">
             <xpath expr="//h2[1]" position="attributes">
                 <attribute name="t-if">o.is_proforma == False</attribute>
             </xpath>
 
             <xpath expr="//h2[1]" position="after">
-                CICCIO PASTICCIO
                 <h2 t-if="o.is_proforma == True">
                     <span>Proforma invoice</span>
-                    <span t-field="o.number"/>
+                    <span t-field="o.proforma_number_with_version"/>
                 </h2>
             </xpath>
         </template>

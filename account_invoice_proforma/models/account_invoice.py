@@ -2,7 +2,9 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
 from odoo import fields, models, api, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError,ValidationError
+from datetime import datetime
+from odoo.tools.misc import DEFAULT_SERVER_DATE_FORMAT
 import re
 
 class AccountInvoice(models.Model):
@@ -37,6 +39,13 @@ class AccountInvoice(models.Model):
     ]
 
     @api.multi
+    def write(self, values):
+        if not self._context.get('send_proforma_invoice') and \
+                values and values.keys():
+            values['proforma_has_changed'] = True
+        return super(AccountInvoice, self).write(values)
+
+    @api.multi
     @api.depends("proforma_version", "proforma_number")
     def _get_proforma_info(self):
         for invoice in self:
@@ -54,21 +63,30 @@ class AccountInvoice(models.Model):
         if not self.invoice_line_ids:
             raise UserError(_("This invoice has no lines!"))
         if self.is_proforma:
-            if not self.proforma_number:
-                self.proforma_number = \
-                    self.proforma_sequence_number_next_prefix + \
-                    self.proforma_sequence_number_next
-                #  sequence next()
-            if self.proforma_has_changed:
-                self.proforma_version += 1
-                self.proforma_has_changed = False
-        if self._context.get("template_proforma"):
-            template = self.env.ref("account_invoice_proforma.email_template_edi_proforma_invoice", False)
-            compose_form = self.env.ref("account.account_invoice_send_wizard_form", False)
-            lang = self.env.context.get("lang")
+            proforma_invoice = self.with_context(send_proforma_invoice=True)
+            if not proforma_invoice.proforma_number:
+                sequence, domain = \
+                    proforma_invoice._get_proforma_seq_number_next_stuff()
+                if not sequence:
+                    raise ValidationError(_(
+                        "The proforma_sequence is not set for current Journal!"
+                    ))
+                invoice_date = proforma_invoice.date or proforma_invoice.date_invoice
+
+                if not invoice_date:
+                    invoice_date = fields.Date.context_today(proforma_invoice)
+                proforma_invoice.proforma_number = sequence.with_context(
+                    ir_sequence_date=invoice_date).next_by_id()
+            if proforma_invoice.proforma_has_changed:
+                proforma_invoice.proforma_version += 1
+                proforma_invoice.proforma_has_changed = False
+        if proforma_invoice._context.get("template_proforma"):
+            template = proforma_invoice.env.ref("account_invoice_proforma.email_template_edi_proforma_invoice", False)
+            compose_form = proforma_invoice.env.ref("account.account_invoice_send_wizard_form", False)
+            lang = proforma_invoice.env.context.get("lang")
             if template and template.lang:
-                lang = template._render_template(template.lang, "account.invoice", self.id)
-            self = self.with_context(lang=lang)
+                lang = template._render_template(template.lang, "account.invoice", proforma_invoice.id)
+            proforma_invoice = proforma_invoice.with_context(lang=lang)
             invoice_types = {
                 "out_invoice": _("Invoice"),
                 "in_invoice": _("Vendor Bill"),
@@ -77,12 +95,12 @@ class AccountInvoice(models.Model):
             }
             ctx = dict(
                 default_model="account.invoice",
-                default_res_id=self.id,
+                default_res_id=proforma_invoice.id,
                 default_use_template=bool(template),
                 default_template_id=template and template.id or False,
                 default_composition_mode="comment",
                 mark_invoice_as_sent=True,
-                model_description=invoice_types[self.type],
+                model_description=invoice_types[proforma_invoice.type],
                 custom_layout="mail.mail_notification_paynow",
                 force_email=True
             )
