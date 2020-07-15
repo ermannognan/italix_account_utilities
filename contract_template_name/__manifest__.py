@@ -4,18 +4,17 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 {
-    'name': "Account Payment Template",
-    'summary': 'Create a payment template for proforma',
+    'name': "Contract template name",
+    'summary': 'Adds automatic contract name from template',
     'version': '12.0.1.0.0',
     'category': 'Account',
-    'author': 'Ermanno Gnan, Gleydson Silva',
+    'author': 'Ermanno Gnan, Hudson Ferreira da Silva',
     'website': '',
     'license': 'AGPL-3',
     'depends': [
-        'account',
+        'contract',
     ],
     "data": [
-        
     ],
     "installable": True
 }
